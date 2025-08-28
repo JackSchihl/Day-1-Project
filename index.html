@@ -1,4 +1,4 @@
-# Day-1-Project
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -55,15 +55,15 @@
         }
 
         function getScale(m, b) {
-            // Find reasonable bounds for x and y
-            // Try to keep grid 1:1 if possible for small values
-            let maxAbs = Math.max(Math.abs(m), Math.abs(b), 5);
-            let gridStep = 1;
+            // Increase zoom: use smaller default range
+            let maxAbs = Math.max(Math.abs(m), Math.abs(b), 1);
+            let gridStep = 0.25;
+            if (maxAbs > 2.5) gridStep = 0.5;
+            if (maxAbs > 5) gridStep = 1;
             if (maxAbs > 10) gridStep = 2;
             if (maxAbs > 20) gridStep = 5;
             if (maxAbs > 50) gridStep = 10;
-            let range = Math.max(10, Math.ceil(Math.abs(b) + Math.abs(m * 10)));
-            // Always show at least -10 to 10
+            let range = Math.max(1.5, Math.ceil(Math.abs(b) + Math.abs(m * 2.5)));
             let minX = -range;
             let maxX = range;
             let minY = -range;
@@ -71,34 +71,39 @@
             return { minX, maxX, minY, maxY, gridStep };
         }
 
-        function drawGraph(m, b) {
+        function drawGraph(m, b, labelEveryOne = false) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Get scale
             const { minX, maxX, minY, maxY, gridStep } = getScale(m, b);
-            // Map (x, y) to canvas
             function toCanvas(x, y) {
                 let px = (x - minX) / (maxX - minX) * canvas.width;
                 let py = canvas.height - (y - minY) / (maxY - minY) * canvas.height;
                 return [px, py];
             }
-            // Draw grid lines
             ctx.save();
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
-            ctx.font = '10px Arial';
-            // Vertical grid
+            ctx.font = 'bold 13px Arial';
+            let xLabelStep, yLabelStep;
+            if (labelEveryOne) {
+                xLabelStep = 1;
+                yLabelStep = 1;
+            } else {
+                let maxLabels = 10;
+                xLabelStep = Math.ceil((maxX - minX) / (gridStep * maxLabels)) * gridStep;
+                yLabelStep = Math.ceil((maxY - minY) / (gridStep * maxLabels)) * gridStep;
+            }
             for (let x = Math.ceil(minX / gridStep) * gridStep; x <= maxX; x += gridStep) {
                 let [px] = toCanvas(x, 0);
                 ctx.beginPath();
                 ctx.moveTo(px, 0);
                 ctx.lineTo(px, canvas.height);
                 ctx.stroke();
-                // Label
-                if (Math.abs(x) < 1e-6) continue; // skip 0, will label axes
-                ctx.fillStyle = '#888';
-                ctx.fillText(x, px + 2, canvas.height / 2 + 12);
+                if (Math.abs(x) < 1e-6) continue;
+                if (Math.abs((x / xLabelStep) - Math.round(x / xLabelStep)) < 1e-6) {
+                    ctx.fillStyle = '#222';
+                    ctx.fillText(Number(x.toFixed(2)), px + 2, canvas.height / 2 + 16);
+                }
             }
-            // Horizontal grid
             for (let y = Math.ceil(minY / gridStep) * gridStep; y <= maxY; y += gridStep) {
                 let [, py] = toCanvas(0, y);
                 ctx.beginPath();
@@ -106,29 +111,27 @@
                 ctx.lineTo(canvas.width, py);
                 ctx.stroke();
                 if (Math.abs(y) < 1e-6) continue;
-                ctx.fillStyle = '#888';
-                ctx.fillText(y, canvas.width / 2 + 4, py - 2);
+                if (Math.abs((y / yLabelStep) - Math.round(y / yLabelStep)) < 1e-6) {
+                    ctx.fillStyle = '#222';
+                    ctx.fillText(Number(y.toFixed(2)), canvas.width / 2 + 8, py - 2);
+                }
             }
-            // Draw axes
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 2;
-            // y-axis
             let [yAxisX] = toCanvas(0, 0);
             ctx.beginPath();
             ctx.moveTo(yAxisX, 0);
             ctx.lineTo(yAxisX, canvas.height);
             ctx.stroke();
-            // x-axis
             let [, xAxisY] = toCanvas(0, 0);
             ctx.beginPath();
             ctx.moveTo(0, xAxisY);
             ctx.lineTo(canvas.width, xAxisY);
             ctx.stroke();
-            // Label axes
             ctx.fillStyle = '#000';
+            ctx.font = 'bold 15px Arial';
             ctx.fillText('x', canvas.width - 15, xAxisY - 6);
-            ctx.fillText('y', yAxisX + 6, 12);
-            // Draw the line
+            ctx.fillText('y', yAxisX + 10, 18);
             ctx.strokeStyle = '#0078d7';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -156,33 +159,9 @@
         }
 
         visualizeBtn.addEventListener('click', visualize);
-        // Initial draw
-        visualize();
+    // Initial draw with 1-to-1 labeling
+    drawGraph(parseFloat(slopeInput.value), parseFloat(yInterceptInput.value), true);
     });
-    </script>
-</body>
-</html>
-
-            ctx.strokeStyle = '#0074D9';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            let first = true;
-            for (let x = -10; x <= 10; x += 0.1) {
-                const y = m * x + b;
-                const cx = toCanvasX(x);
-                const cy = toCanvasY(y);
-                if (first) {
-                    ctx.moveTo(cx, cy);
-                    first = false;
-                } else {
-                    ctx.lineTo(cx, cy);
-                }
-            }
-            ctx.stroke();
-        }
-
-        // Initial plot
-        plotLine();
     </script>
 </body>
 </html>
